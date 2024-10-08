@@ -1,11 +1,17 @@
 export interface CardType {
   rating: number
   name: string
-  cardId: string
   rarity: string
-  edition: string
   team: string
-  prints: number
+  stats: {
+    shooting: number
+    checking: number
+    puckControl: number
+    passing: number
+    speed: number
+    endurance: number
+  }
+  bestStat: string
 }
 
 export interface UserType {

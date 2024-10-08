@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
+import axios from 'axios'
 import Header from './components/Header'
 import Home from './components/Home'
 import PackOpener from './components/PackOpener'
 import Scrims from './components/Scrims'
 import TeamManagement from './components/TeamManagement'
 import Login from './components/Login'
+import Register from './components/Register'
 import MatchSimulation from './components/MatchSimulation'
 import { CardType, UserType } from './types'
 
@@ -16,19 +18,38 @@ function App() {
   const [gold, setGold] = useState(1000)
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser)
-      setUser(parsedUser)
-      setPackedCards(parsedUser.packedCards || [])
-      setActiveTeam(parsedUser.activeTeam || [])
-      setGold(parsedUser.gold || 1000)
+    const token = localStorage.getItem('token')
+    if (token) {
+      axios.get('/api/user', {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(response => {
+        setUser(response.data)
+        setPackedCards(response.data.packedCards || [])
+        setActiveTeam(response.data.activeTeam || [])
+        setGold(response.data.gold || 1000)
+      }).catch(() => {
+        localStorage.removeItem('token')
+      })
     }
   }, [])
 
+  const logout = () => {
+    localStorage.removeItem('token')
+    setUser(null)
+    setPackedCards([])
+    setActiveTeam([])
+    setGold(1000)
+  }
+
   const saveUserData = (updatedUser: UserType) => {
-    localStorage.setItem('user', JSON.stringify(updatedUser))
-    setUser(updatedUser)
+    const token = localStorage.getItem('token')
+    if (token) {
+      axios.put('/api/user', updatedUser, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(() => {
+        setUser(updatedUser)
+      }).catch(console.error)
+    }
   }
 
   const addPackedCards = (newCards: CardType[]) => {
@@ -60,10 +81,11 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-900 text-white">
-        <Header gold={gold} user={user} />
+        <Header gold={gold} user={user} logout={logout} />
         <main className="container mx-auto px-4 py-8">
           <Routes>
             <Route path="/login" element={<Login setUser={setUser} />} />
+            <Route path="/register" element={<Register setUser={setUser} />} />
             <Route
               path="/"
               element={user ? <Home /> : <Navigate to="/login" />}
